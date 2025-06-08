@@ -34,7 +34,7 @@ function addEntry() {
     };
     
     // Get existing entries
-    let entries = JSON.parse(localStorage.getItem('calorieEntries') || [];
+    let entries = JSON.parse(localStorage.getItem('calorieEntries')) || [];
     
     // Check if entry for this date already exists
     const existingIndex = entries.findIndex(e => e.date === entry.date);
@@ -59,7 +59,7 @@ function addEntry() {
 
 function loadEntries() {
     // Get entries from localStorage
-    const entries = JSON.parse(localStorage.getItem('calorieEntries') || [];
+    const entries = JSON.parse(localStorage.getItem('calorieEntries')) || [];
     
     // Sort entries by date (newest first)
     entries.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -96,7 +96,7 @@ function deleteEntry(e) {
     const dateToDelete = e.target.getAttribute('data-date');
     
     // Get entries from localStorage
-    let entries = JSON.parse(localStorage.getItem('calorieEntries') || [];
+    let entries = JSON.parse(localStorage.getItem('calorieEntries')) || [];
     
     // Filter out the entry to delete
     entries = entries.filter(entry => entry.date !== dateToDelete);
