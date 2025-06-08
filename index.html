@@ -86,11 +86,31 @@
         .negative {
             color: red;
         }
+        .history-summary {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+        #github-token-section {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>My Daily Calorie Tracker</h1>
+        
+        <div id="github-token-section">
+            <h3>GitHub Setup (for persistent storage)</h3>
+            <p>To enable saving your daily deficit/excess history, create a <a href="https://github.com/settings/tokens/new" target="_blank">GitHub Personal Access Token</a> with "gist" permission and paste it below:</p>
+            <input type="password" id="github-token" placeholder="GitHub Personal Access Token">
+            <button id="save-token">Save Token</button>
+            <p><small>Token is saved in your browser only, not on any server.</small></p>
+        </div>
         
         <div class="entry-form">
             <div class="form-group">
@@ -136,6 +156,17 @@
             <div id="daily-summary">
                 <p>BMR: <strong>1668 kcal</strong></p>
                 <p>No entries yet today</p>
+            </div>
+            <button id="save-daily-result" style="margin-top: 10px;">Save Today's Result</button>
+        </div>
+        
+        <div class="history-summary">
+            <h2>Deficit/Excess History</h2>
+            <div id="history-summary">
+                <p>Loading history...</p>
+            </div>
+            <div id="total-summary">
+                <p>Total: <span id="total-deficit">0</span> kcal <span id="deficit-type">deficit</span></p>
             </div>
         </div>
     </div>
