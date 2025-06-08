@@ -1,5 +1,7 @@
 // Constants
 const BMR = 1668; // Your Basal Metabolic Rate
+const RESET_HOUR = 5; // 5:30 AM reset time
+const RESET_MINUTE = 30;
 
 // DOM Elements
 const entryDate = document.getElementById('entry-date');
@@ -7,44 +9,63 @@ const caloriesConsumed = document.getElementById('calories-consumed');
 const caloriesBurnt = document.getElementById('calories-burnt');
 const addEntryBtn = document.getElementById('add-entry');
 const entriesBody = document.getElementById('entries-body');
-const avgNetDisplay = document.getElementById('avg-net');
-const trendDisplay = document.getElementById('trend');
+const remainingDisplay = document.getElementById('remaining-calories');
+const dailySummary = document.getElementById('daily-summary');
 
 // Initialize with today's date
 entryDate.valueAsDate = new Date();
 
 // Load entries when page loads
-document.addEventListener('DOMContentLoaded', loadEntries);
+document.addEventListener('DOMContentLoaded', function() {
+    checkDailyReset();
+    loadEntries();
+});
 
 // Add entry event listener
 addEntryBtn.addEventListener('click', addEntry);
 
+function checkDailyReset() {
+    const now = new Date();
+    const lastReset = localStorage.getItem('lastResetDate');
+    const lastResetDate = lastReset ? new Date(lastReset) : null;
+    
+    // Check if we need to reset (after 5:30 AM and a new day)
+    if (!lastResetDate || 
+        (now.getDate() !== lastResetDate.getDate() && 
+         now.getHours() >= RESET_HOUR && 
+         now.getMinutes() >= RESET_MINUTE)) {
+        localStorage.removeItem('calorieEntries');
+        localStorage.setItem('lastResetDate', now.toISOString());
+        updateRemainingDisplay(BMR);
+        updateDailySummary([], BMR);
+    }
+}
+
 function addEntry() {
     // Validate inputs
-    if (!entryDate.value || !caloriesConsumed.value || !caloriesBurnt.value) {
-        alert('Please fill all fields');
+    const consumed = parseInt(caloriesConsumed.value);
+    const burnt = parseInt(caloriesBurnt.value);
+    
+    if (!entryDate.value || isNaN(consumed) || isNaN(burnt)) {
+        alert('Please fill all fields with valid numbers (use 0 if needed)');
         return;
     }
     
-    // Create entry object
+    // Create entry object with timestamp
+    const now = new Date();
     const entry = {
+        timestamp: now.toISOString(),
         date: entryDate.value,
-        consumed: parseInt(caloriesConsumed.value),
-        burnt: parseInt(caloriesBurnt.value)
+        time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        consumed: consumed,
+        burnt: burnt
     };
     
     // Get existing entries
     let entries = JSON.parse(localStorage.getItem('calorieEntries')) || [];
     
-    // Check if entry for this date already exists
-    const existingIndex = entries.findIndex(e => e.date === entry.date);
-    if (existingIndex >= 0) {
-        // Update existing entry
-        entries[existingIndex] = entry;
-    } else {
-        // Add new entry
-        entries.push(entry);
-    }
+    // Add new entry
+    entries.push(entry);
     
     // Save to localStorage
     localStorage.setItem('calorieEntries', JSON.stringify(entries));
@@ -61,45 +82,55 @@ function loadEntries() {
     // Get entries from localStorage
     const entries = JSON.parse(localStorage.getItem('calorieEntries')) || [];
     
-    // Sort entries by date (newest first)
-    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Filter today's entries
+    const todayEntries = entries.filter(entry => isSameDay(new Date(entry.timestamp), new Date()));
+    
+    // Sort entries by timestamp (oldest first for proper calculation)
+    todayEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     
     // Clear table body
     entriesBody.innerHTML = '';
     
+    // Calculate running total
+    let runningTotal = BMR;
+    
     // Add entries to table
-    entries.forEach(entry => {
+    todayEntries.forEach(entry => {
         const net = entry.consumed - entry.burnt;
-        const vsBMR = net - BMR;
+        runningTotal -= net;
         
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${formatDate(entry.date)}</td>
-            <td>${entry.consumed}</td>
-            <td>${entry.burnt}</td>
-            <td style="color: ${vsBMR > 0 ? 'red' : 'green'}">${vsBMR > 0 ? '+' : ''}${vsBMR}</td>
-            <td><button class="delete-btn" data-date="${entry.date}">Delete</button></td>
+            <td>${entry.time}</td>
+            <td>${entry.consumed} kcal</td>
+            <td>${entry.burnt} kcal</td>
+            <td>${net} kcal</td>
+            <td class="${runningTotal >= 0 ? 'positive' : 'negative'}">${runningTotal} kcal</td>
+            <td><button class="delete-btn" data-timestamp="${entry.timestamp}">Delete</button></td>
         `;
         entriesBody.appendChild(row);
     });
+    
+    // Update remaining calories display
+    updateRemainingDisplay(runningTotal);
+    
+    // Update daily summary
+    updateDailySummary(todayEntries, runningTotal);
     
     // Add event listeners to delete buttons
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', deleteEntry);
     });
-    
-    // Update summary
-    updateSummary(entries);
 }
 
 function deleteEntry(e) {
-    const dateToDelete = e.target.getAttribute('data-date');
+    const timestampToDelete = e.target.getAttribute('data-timestamp');
     
     // Get entries from localStorage
     let entries = JSON.parse(localStorage.getItem('calorieEntries')) || [];
     
     // Filter out the entry to delete
-    entries = entries.filter(entry => entry.date !== dateToDelete);
+    entries = entries.filter(entry => entry.timestamp !== timestampToDelete);
     
     // Save to localStorage
     localStorage.setItem('calorieEntries', JSON.stringify(entries));
@@ -108,40 +139,35 @@ function deleteEntry(e) {
     loadEntries();
 }
 
-function updateSummary(entries) {
+function updateRemainingDisplay(remaining) {
+    remainingDisplay.textContent = remaining;
+    remainingDisplay.className = remaining >= 0 ? 'positive' : 'negative';
+}
+
+function updateDailySummary(entries, remaining) {
     if (entries.length === 0) {
-        avgNetDisplay.textContent = '0';
-        trendDisplay.textContent = 'No data';
+        dailySummary.innerHTML = `
+            <p>BMR: <strong>1668 kcal</strong></p>
+            <p>No entries yet today</p>
+        `;
         return;
     }
     
-    // Calculate average net calories
-    const totalNet = entries.reduce((sum, entry) => sum + (entry.consumed - entry.burnt), 0);
-    const avgNet = Math.round(totalNet / entries.length);
-    avgNetDisplay.textContent = avgNet;
+    const totalConsumed = entries.reduce((sum, entry) => sum + entry.consumed, 0);
+    const totalBurnt = entries.reduce((sum, entry) => sum + entry.burnt, 0);
+    const netToday = totalConsumed - totalBurnt;
     
-    // Simple trend analysis (last 7 days if available)
-    const recentEntries = entries.slice(0, 7).reverse(); // Get up to 7 most recent entries, oldest first
-    if (recentEntries.length > 1) {
-        const firstNet = recentEntries[0].consumed - recentEntries[0].burnt;
-        const lastNet = recentEntries[recentEntries.length - 1].consumed - recentEntries[recentEntries.length - 1].burnt;
-        
-        if (lastNet > firstNet) {
-            trendDisplay.textContent = 'Increasing';
-            trendDisplay.style.color = 'red';
-        } else if (lastNet < firstNet) {
-            trendDisplay.textContent = 'Decreasing';
-            trendDisplay.style.color = 'green';
-        } else {
-            trendDisplay.textContent = 'Stable';
-            trendDisplay.style.color = 'black';
-        }
-    } else {
-        trendDisplay.textContent = 'Not enough data';
-    }
+    dailySummary.innerHTML = `
+        <p>BMR: <strong>1668 kcal</strong></p>
+        <p>Total Consumed: <strong>${totalConsumed} kcal</strong></p>
+        <p>Total Burnt: <strong>${totalBurnt} kcal</strong></p>
+        <p>Net Intake: <strong class="${netToday <= 0 ? 'positive' : 'negative'}">${netToday} kcal</strong></p>
+        <p>Remaining: <strong class="${remaining >= 0 ? 'positive' : 'negative'}">${remaining} kcal</strong></p>
+    `;
 }
 
-function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+function isSameDay(date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
 }
