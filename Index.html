@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Calorie Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .entry-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .entry-form input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .summary {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Calorie Tracker</h1>
+        
+        <div class="entry-form">
+            <input type="date" id="entry-date" required>
+            <input type="number" id="calories-consumed" placeholder="Calories Consumed" required>
+            <input type="number" id="calories-burnt" placeholder="Calories Burnt" required>
+            <button id="add-entry">Add Entry</button>
+        </div>
+        
+        <div>
+            <h2>Daily Entries</h2>
+            <table id="entries-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Consumed</th>
+                        <th>Burnt</th>
+                        <th>Net vs BMR</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="entries-body">
+                    <!-- Entries will be added here dynamically -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="summary">
+            <h2>Summary</h2>
+            <p>BMR: <strong>1668 kcal/day</strong></p>
+            <p>Average Daily Net Calories: <strong id="avg-net">0</strong> kcal</p>
+            <p>7-Day Trend: <span id="trend">No data</span></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
